@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import * as Slider from '@radix-ui/react-slider';
 import { ChatBubble } from './ChatBubble';
@@ -38,7 +38,6 @@ export default function ChatPage() {
     setLoading(true);
 
     const newMessage = { content: message, isUser: true, anger: 0, sadness: 0 };
-    const updatedChatHistory = [...chatHistory, newMessage];
 
     try {
       console.log('Sending message:', message);
@@ -163,7 +162,7 @@ export default function ChatPage() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              className="flex-1 p-2 border rounded-lg"
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Type your message..."
               disabled={loading}
             />
