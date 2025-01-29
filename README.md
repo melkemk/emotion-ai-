@@ -1,4 +1,30 @@
 
+## Open the Application
+
+1. **Start the Flask server** by running the `app.py` script.
+2. **Open your web browser** and navigate to `http://localhost:5000`.
+
+## Adjust Emotional Parameters
+
+- You will see several sliders labeled "Valence", "Arousal", "Selection Threshold", "Resolution Level", "Goal-Directedness", and "Securing Rate".
+- Adjust these sliders to set the emotional parameters. Each slider ranges from 1 to 7.
+
+## Send a Message
+
+- Type your message in the input box at the bottom of the screen.
+- Press the "Enter" key or click the "Send" button to send your message.
+
+## View the Response
+
+- The application will process your message and the emotional parameters.
+- The response from the AI will be displayed in the chat container along with the emotional indicators for anger and sadness.
+
+## Emotional Indicators
+
+- The current levels of anger and sadness will be displayed as bars in the "Emotion Indicators" section.
+- These levels are updated based on the response from the AI.
+
+
 This script sets up a Flask web application that uses the LangChain and Groq APIs to process chat messages and analyze emotional content.
 
 Modules:
