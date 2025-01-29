@@ -12,7 +12,7 @@ import json
 
 load_dotenv()
 print(111,'started')
-api ="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"
+api =""
 if not api:
     raise ValueError("GROQ_API_KEY environment variable not set")
 
