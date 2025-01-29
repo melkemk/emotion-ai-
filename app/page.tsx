@@ -10,7 +10,7 @@ interface Message {
   anger: number;
   sadness: number;
 }
-
+ 
 export default function ChatPage() {
   const [valence, setValence] = useState<number>(4);
   const [arousal, setArousal] = useState<number>(4);
@@ -41,7 +41,7 @@ export default function ChatPage() {
 
     try {
       console.log('Sending message:', message);
-      const response = await axios.post('https://melkamumk.pythonanywhere.com/chat', {
+      const response = await axios.post('http://localhost:5000/chat', {
         message: message,
         valence,
         arousal,
