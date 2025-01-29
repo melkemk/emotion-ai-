@@ -1,7 +1,7 @@
 
 ## Open the Application
 
-1. **Start the Flask server** by running the `app.py` script.
+1. **Start the Flask server** by running the `app.py` script after instaling required packages see down for the packages .
 2. **Open your web browser** and navigate to `http://localhost:5000`.
 
 ## Adjust Emotional Parameters

@@ -41,7 +41,7 @@ export default function ChatPage() {
 
     try {
       console.log('Sending message:', message);
-      const response = await axios.post('http://localhost:5000/chat', {
+      const response = await axios.post('https://melkamumk.pythonanywhere.com/chat', {
         message: message,
         valence,
         arousal,
@@ -189,7 +189,7 @@ const SliderControl = ({ label, value, onValueChange, min, max, step }: {
   max: number;
   step: number;
 }) => (
-  <div className="space-y-2">
+  <div className="space-y-2"> 
     <div className="flex justify-between">
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <span className="text-sm text-gray-500">{value}</span>
