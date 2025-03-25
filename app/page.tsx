@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import * as Slider from '@radix-ui/react-slider';
 import { ChatBubble } from './ChatBubble';
 
-interface Message {
+interface Message { 
   content: string;
   isUser: boolean;
   anger: number;
@@ -20,13 +20,7 @@ export default function ChatPage() {
   const [goalDirectedness, setGoalDirectedness] = useState<number>(4);
   const [securingRate, setSecuringRate] = useState<number>(4);
   const [message, setMessage] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<Message[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('chatHistory');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  const [chatHistory, setChatHistory] = useState<Message[]>([]); // Session-only, resets on refresh
   const [loading, setLoading] = useState(false);
   const [currentEmotions, setCurrentEmotions] = useState<{ anger: number; sadness: number; joy: number }>({
     anger: 0,
@@ -34,30 +28,14 @@ export default function ChatPage() {
     joy: 0,
   });
   const [bookFile, setBookFile] = useState<File | null>(null);
-  const [characters, setCharacters] = useState<{ id: number; name: string; traits: string }[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('characters');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('selectedCharacter');
-    }
-    return null;
-  });
+  const [characters, setCharacters] = useState<{ id: number; name: string; traits: string }[]>([]);
+  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+  const [userId] = useState<string>('1'); // Hardcoded for now
 
   const sliderProps = { min: 1, max: 7, step: 1 };
 
-  useEffect(() => {
-    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-    localStorage.setItem('characters', JSON.stringify(characters));
-    localStorage.setItem('selectedCharacter', selectedCharacter || '');
-  }, [chatHistory, characters, selectedCharacter]);
-
   const extractCharacters = async () => {
-    if (!bookFile) {
+    if (!bookFile) { 
       alert('Please upload a PDF book.');
       return;
     }
@@ -67,7 +45,7 @@ export default function ChatPage() {
       formData.append('file', bookFile);
       formData.append('book_title', bookFile.name.split('.', 1)[0]);
 
-      const response = await axios.post('http://127.0.0.1:5000/extract_characters', formData, {
+      const response = await axios.post('https://melkamumk.pythonanywhere.com/extract_characters', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setCharacters(response.data.characters.slice(1));
@@ -88,29 +66,32 @@ export default function ChatPage() {
     }
 
     setLoading(true);
-    const newMessage = { content: message, isUser: true, anger: 0, sadness: 0, joy: 0 };
-    setChatHistory((prev) => [...prev, newMessage]);
+    const newUserMessage = { content: message, isUser: true, anger: 0, sadness: 0, joy: 0 };
+    const updatedHistory = [...chatHistory, newUserMessage];
+    setChatHistory(updatedHistory); // Add to session history
 
     try {
-      const response = await axios.post('http://127.0.0.1:5000/chat', {
+      const response = await axios.post('https://melkamumk.pythonanywhere.com/chat', {
         message,
+        history: updatedHistory.map(msg => ({ content: msg.content, is_user: msg.isUser })), // Send current session history
         valence,
         arousal,
         selection_threshold: selectionThreshold,
         resolution: resolutionLevel,
         goal_directedness: goalDirectedness,
         securing_rate: securingRate,
-        user_id: '1', // Hardcoded for simplicity; consider dynamic user IDs
+        user_id: userId,
         character_id: selectedCharacter,
       });
 
-      setChatHistory(response.data.history.map((msg: any) => ({
-        content: msg.content,
-        isUser: msg.is_user,
-        anger: msg.anger || 0,
-        sadness: msg.sadness || 0,
-        joy: msg.joy || 0,
-      })));
+      const aiMessage = {
+        content: response.data.message,
+        isUser: false,
+        anger: response.data.anger,
+        sadness: response.data.sadness,
+        joy: response.data.joy,
+      };
+      setChatHistory([...updatedHistory, aiMessage]); // Add AI response to session history
       setCurrentEmotions({
         anger: response.data.anger,
         sadness: response.data.sadness,
