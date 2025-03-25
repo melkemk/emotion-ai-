@@ -53,6 +53,12 @@ Routes:
 Environment Variables:
 - GROQ_API_KEY: The API key for accessing the Groq API.
 
+
+
+![Application Screenshot](image.png)
+
+
+
 Usage:
 1. Ensure that the required environment variables are set.
 2. Run the script to start the Flask web application.
