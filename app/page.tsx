@@ -158,7 +158,7 @@ export default function ChatPage() {
         {/* Emotion Indicators */}
         <div className="bg-white rounded-lg p-4 shadow-md flex gap-4">
           <div className="flex-1">
-            <h3 className="text-red-600 font-medium text-black">Anger: {currentEmotions.anger.toFixed(1)}</h3>
+            <h3 className="text-red-600 font-medium">Anger: {currentEmotions.anger.toFixed(1)}</h3>
             <div className="h-2 bg-red-100 rounded-full">
               <div
                 className="h-full bg-red-500 rounded-full transition-all duration-300"
@@ -167,7 +167,7 @@ export default function ChatPage() {
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="text-blue-600 font-medium text-black">Sadness: {currentEmotions.sadness.toFixed(1)}</h3>
+            <h3 className="text-blue-600 font-medium">Sadness: {currentEmotions.sadness.toFixed(1)}</h3>
             <div className="h-2 bg-blue-100 rounded-full">
               <div
                 className="h-full bg-blue-500 rounded-full transition-all duration-300"
@@ -176,7 +176,7 @@ export default function ChatPage() {
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="text-green-600 font-medium text-black">Joy: {currentEmotions.joy.toFixed(1)}</h3>
+            <h3 className="text-green-600 font-medium">Joy: {currentEmotions.joy.toFixed(1)}</h3>
             <div className="h-2 bg-green-100 rounded-full">
               <div
                 className="h-full bg-green-500 rounded-full transition-all duration-300"
@@ -199,14 +199,14 @@ export default function ChatPage() {
                 joy={msg.joy}
               />
             ))}
-            {loading && <div className="text-gray-500 text-black">Thinking...</div>}
+            {loading && <div className="text-gray-500">Thinking...</div>}
           </div>
           <div className="flex gap-2">
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Type your message..."
               disabled={loading}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
@@ -235,8 +235,8 @@ const SliderControl = ({ label, value, onValueChange, min, max, step }: {
 }) => (
   <div className="space-y-2">
     <div className="flex justify-between">
-      <label className="text-sm font-medium text-gray-700 text-black">{label}</label>
-      <span className="text-sm text-gray-500 text-black">{value}</span>
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <span className="text-sm text-gray-500">{value}</span>
     </div>
     <Slider.Root
       className="relative flex items-center h-5"
