@@ -1,255 +1,488 @@
-'use client';
-import { useState } from 'react';
-import axios from 'axios';
-import * as Slider from '@radix-ui/react-slider';
-import { ChatBubble } from './ChatBubble';
+"use client"
+import { useState, useRef, useEffect } from "react"
+import axios from "axios"
+import { ChatBubble } from "./ChatBubble"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Upload, Send, BookOpen, User, Brain, MessageSquare, Loader2 } from "lucide-react"
 
-interface Message { 
-  content: string;
-  isUser: boolean;
-  anger: number;
-  sadness: number;
-  joy: number;
+interface Message {
+  content: string
+  isUser: boolean
+  anger: number
+  sadness: number
+  joy: number
+}
+
+interface Parameters {
+  valence: number
+  arousal: number
+  selection_threshold: number
+  resolution: number
+  goal_directedness: number
+  securing_rate: number
 }
 
 export default function ChatPage() {
-  const [valence, setValence] = useState<number>(4);
-  const [arousal, setArousal] = useState<number>(4);
-  const [selectionThreshold, setSelectionThreshold] = useState<number>(4);
-  const [resolutionLevel, setResolutionLevel] = useState<number>(4);
-  const [goalDirectedness, setGoalDirectedness] = useState<number>(4);
-  const [securingRate, setSecuringRate] = useState<number>(4);
-  const [message, setMessage] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<Message[]>([]); // Session-only, resets on refresh
-  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string>("")
+  const [chatHistory, setChatHistory] = useState<Message[]>([])
+  const [loading, setLoading] = useState(false)
   const [currentEmotions, setCurrentEmotions] = useState<{ anger: number; sadness: number; joy: number }>({
     anger: 0,
     sadness: 0,
     joy: 0,
-  });
-  const [bookFile, setBookFile] = useState<File | null>(null);
-  const [characters, setCharacters] = useState<{ id: number; name: string; traits: string }[]>([]);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
-  const [userId] = useState<string>('1'); // Hardcoded for now
+  })
+  const [currentParameters, setCurrentParameters] = useState<Parameters>({
+    valence: 0,
+    arousal: 0,
+    selection_threshold: 0,
+    resolution: 0,
+    goal_directedness: 0,
+    securing_rate: 0,
+  })
+  const [currentTraits, setCurrentTraits] = useState<string>("")
+  const [bookFile, setBookFile] = useState<File | null>(null)
+  const [characters, setCharacters] = useState<{ id: number; name: string; traits: string }[]>([])
+  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null)
+  const [userId] = useState<string>("1") // Hardcoded for now
+  const [activeTab, setActiveTab] = useState("chat")
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
-  const sliderProps = { min: 1, max: 7, step: 1 };
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Scroll to bottom of chat when messages change
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    }
+  }, [chatHistory])
+
+  // Toggle dark mode
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
+  }, [isDarkMode])
 
   const extractCharacters = async () => {
-    if (!bookFile) { 
-      alert('Please upload a PDF book.');
-      return;
+    if (!bookFile) {
+      alert("Please upload a PDF book.")
+      return
     }
     try {
-      setLoading(true);
-      const formData = new FormData();
-      formData.append('file', bookFile);
-      formData.append('book_title', bookFile.name.split('.', 1)[0]);
+      setLoading(true)
+      const formData = new FormData()
+      formData.append("file", bookFile)
+      formData.append("book_title", bookFile.name.split(".", 1)[0])
 
-      const response = await axios.post('https://melkamumk.pythonanywhere.com/extract_characters', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setCharacters(response.data.characters.slice(1));
-      setBookFile(null);
+      const response = await axios.post("http://127.0.0.1:5000/extract_characters", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      setCharacters(response.data.characters.slice(1))
+      setBookFile(null)
+      setActiveTab("characters")
     } catch (error) {
-      console.error('Error extracting characters:', error);
-      alert('Failed to extract characters.');
+      console.error("Error extracting characters:", error)
+      alert("Failed to extract characters.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const sendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim()) return
     if (!selectedCharacter) {
-      alert('Please select a character to chat with.');
-      return;
+      alert("Please select a character to chat with.")
+      setActiveTab("characters")
+      return
     }
 
-    setLoading(true);
-    const newUserMessage = { content: message, isUser: true, anger: 0, sadness: 0, joy: 0 };
-    const updatedHistory = [...chatHistory, newUserMessage];
-    setChatHistory(updatedHistory); // Add to session history
+    setLoading(true)
+    const newUserMessage = { content: message, isUser: true, anger: 0, sadness: 0, joy: 0 }
+    const updatedHistory = [...chatHistory, newUserMessage]
+    setChatHistory(updatedHistory)
 
     try {
-      const response = await axios.post('https://melkamumk.pythonanywhere.com/chat', {
+      const response = await axios.post("http://127.0.0.1:5000/chat", {
         message,
-        history: updatedHistory.map(msg => ({ content: msg.content, is_user: msg.isUser })), // Send current session history
-        valence,
-        arousal,
-        selection_threshold: selectionThreshold,
-        resolution: resolutionLevel,
-        goal_directedness: goalDirectedness,
-        securing_rate: securingRate,
+        history: updatedHistory.map((msg) => ({ content: msg.content, is_user: msg.isUser })),
         user_id: userId,
         character_id: selectedCharacter,
-      });
+      })
 
       const aiMessage = {
         content: response.data.message,
         isUser: false,
-        anger: response.data.anger,
-        sadness: response.data.sadness,
-        joy: response.data.joy,
-      };
-      setChatHistory([...updatedHistory, aiMessage]); // Add AI response to session history
-      setCurrentEmotions({
-        anger: response.data.anger,
-        sadness: response.data.sadness,
-        joy: response.data.joy,
-      });
-      setMessage('');
+        anger: response.data.emotions.anger,
+        sadness: response.data.emotions.sadness,
+        joy: response.data.emotions.joy,
+      }
+      setChatHistory([...updatedHistory, aiMessage])
+      setCurrentEmotions(response.data.emotions)
+      setCurrentParameters(response.data.parameters)
+      setCurrentTraits(response.data.traits)
+      setMessage("")
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const getSelectedCharacterName = () => {
+    if (!selectedCharacter) return "No character selected"
+    const character = characters.find((c) => c.id.toString() === selectedCharacter)
+    return character ? character.name : "Unknown character"
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex flex-col">
-      <div className="max-w-4xl w-full mx-auto flex-1 flex flex-col gap-4">
-        {/* Book Upload and Character Selection */}
-        <div className="bg-white rounded-lg p-6 shadow-md">
-          <h2 className="text-xl font-bold mb-4 text-black">Book Upload (PDF)</h2>
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={(e) => setBookFile(e.target.files?.[0] || null)}
-            disabled={loading}
-            className="w-full p-2 border border-gray-300 rounded text-black"
-          />
-          <button
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            onClick={extractCharacters}
-            disabled={loading || !bookFile}
-          >
-            Extract Characters
-          </button>
-          {characters.length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-medium text-black">Select a Character:</h3>
-              <select
-                className="mt-2 w-full p-2 border border-gray-300 rounded text-black"
-                value={selectedCharacter || ''}
-                onChange={(e) => setSelectedCharacter(e.target.value)}
-                disabled={loading}
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 dark:from-background dark:to-background p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header with dark mode toggle */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Character Chat AI
+          </h1>
+          <Button variant="outline" size="icon" onClick={() => setIsDarkMode(!isDarkMode)} className="rounded-full">
+            {isDarkMode ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <option value="">-- Select a character --</option>
-                {characters.map((char) => (
-                  <option key={char.id} value={char.id}>
-                    {char.name} {char.traits}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            )}
+          </Button>
         </div>
 
-        {/* Parameter Controls */}
-        <div className="bg-white rounded-lg p-6 shadow-md grid grid-cols-1 md:grid-cols-2 gap-4">
-          <SliderControl label="Valence" value={valence} onValueChange={setValence} {...sliderProps} />
-          <SliderControl label="Arousal" value={arousal} onValueChange={setArousal} {...sliderProps} />
-          <SliderControl label="Selection Threshold" value={selectionThreshold} onValueChange={setSelectionThreshold} {...sliderProps} />
-          <SliderControl label="Resolution Level" value={resolutionLevel} onValueChange={setResolutionLevel} {...sliderProps} />
-          <SliderControl label="Goal-Directedness" value={goalDirectedness} onValueChange={setGoalDirectedness} {...sliderProps} />
-          <SliderControl label="Securing Rate" value={securingRate} onValueChange={setSecuringRate} {...sliderProps} />
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Chat and Controls */}
+          <div className="lg:col-span-2 space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 mb-4">
+                <TabsTrigger value="chat" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">Chat</span>
+                </TabsTrigger>
+                <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Upload Book</span>
+                </TabsTrigger>
+                <TabsTrigger value="characters" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">Characters</span>
+                </TabsTrigger>
+              </TabsList>
 
-        {/* Emotion Indicators */}
-        <div className="bg-white rounded-lg p-4 shadow-md flex gap-4">
-          <div className="flex-1">
-            <h3 className="text-red-600 font-medium">Anger: {currentEmotions.anger.toFixed(1)}</h3>
-            <div className="h-2 bg-red-100 rounded-full">
-              <div
-                className="h-full bg-red-500 rounded-full transition-all duration-300"
-                style={{ width: `${(currentEmotions.anger / 5) * 100}%` }}
-              />
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-blue-600 font-medium">Sadness: {currentEmotions.sadness.toFixed(1)}</h3>
-            <div className="h-2 bg-blue-100 rounded-full">
-              <div
-                className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                style={{ width: `${(currentEmotions.sadness / 5) * 100}%` }}
-              />
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-green-600 font-medium">Joy: {currentEmotions.joy.toFixed(1)}</h3>
-            <div className="h-2 bg-green-100 rounded-full">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all duration-300"
-                style={{ width: `${(currentEmotions.joy / 5) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
+              <TabsContent value="chat" className="mt-0">
+                <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex justify-between items-center">
+                      <span>Chat with {getSelectedCharacterName()}</span>
+                      {selectedCharacter && (
+                        <div className="flex gap-2">
+                          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                            {characters.find((c) => c.id.toString() === selectedCharacter)?.traits.split(",")[0]}
+                          </span>
+                        </div>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      ref={chatContainerRef}
+                      className="h-[60vh] overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
+                    >
+                      {chatHistory.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                          <MessageSquare className="h-12 w-12 mb-4 opacity-20" />
+                          <p>Select a character and start chatting</p>
+                          <Button variant="link" onClick={() => setActiveTab("characters")} className="mt-2">
+                            Choose a character
+                          </Button>
+                        </div>
+                      )}
 
-        {/* Chat Container */}
-        <div className="bg-white rounded-lg p-4 shadow-md flex-1 flex flex-col">
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-            {chatHistory.map((msg, index) => (
-              <ChatBubble
-                key={index}
-                message={msg.content}
-                isUser={msg.isUser}
-                anger={msg.anger}
-                sadness={msg.sadness}
-                joy={msg.joy}
-              />
-            ))}
-            {loading && <div className="text-gray-500">Thinking...</div>}
+                      {chatHistory.map((msg, index) => (
+                        <ChatBubble
+                          key={index}
+                          message={msg.content}
+                          isUser={msg.isUser}
+                          anger={msg.anger}
+                          sadness={msg.sadness}
+                          joy={msg.joy}
+                        />
+                      ))}
+
+                      {loading && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Thinking...</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <div className="flex w-full gap-2">
+                      <Input
+                        type="text"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                        placeholder="Type your message..."
+                        disabled={loading || !selectedCharacter}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={sendMessage}
+                        disabled={loading || !selectedCharacter || !message.trim()}
+                        className="px-4"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        <span className="ml-2 hidden sm:inline">Send</span>
+                      </Button>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="upload" className="mt-0">
+                <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle>Upload Book (PDF)</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div
+                      className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={handleFileButtonClick}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => setBookFile(e.target.files?.[0] || null)}
+                        disabled={loading}
+                        className="hidden"
+                      />
+                      <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <p className="text-muted-foreground mb-2">
+                        {bookFile ? bookFile.name : "Drag & drop or click to upload a PDF book"}
+                      </p>
+                      {bookFile && (
+                        <p className="text-xs text-muted-foreground">{(bookFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      )}
+                    </div>
+
+                    <Button className="w-full" onClick={extractCharacters} disabled={loading || !bookFile}>
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Extracting Characters...
+                        </>
+                      ) : (
+                        <>
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          Extract Characters
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="characters" className="mt-0">
+                <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle>Select a Character</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {characters.length === 0 ? (
+                      <div className="text-center py-8">
+                        <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                        <p className="text-muted-foreground">No characters available</p>
+                        <Button variant="link" onClick={() => setActiveTab("upload")} className="mt-2">
+                          Upload a book to extract characters
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {characters.map((char) => (
+                          <Card
+                            key={char.id}
+                            className={`cursor-pointer transition-all hover:shadow-md ${
+                              selectedCharacter === char.id.toString() ? "border-primary bg-primary/5" : "border-border"
+                            }`}
+                            onClick={() => setSelectedCharacter(char.id.toString())}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <User className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium">{char.name}</h3>
+                                  <p className="text-xs text-muted-foreground line-clamp-1">{char.traits}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                  {selectedCharacter && (
+                    <CardFooter>
+                      <Button className="w-full" onClick={() => setActiveTab("chat")}>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Start Chatting
+                      </Button>
+                    </CardFooter>
+                  )}
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Type your message..."
-              disabled={loading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            />
-            <button
-              onClick={sendMessage}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              Send
-            </button>
+
+          {/* Sidebar with Character Info and Emotions */}
+          <div className="space-y-6">
+            {/* Character Traits */}
+            {currentTraits && (
+              <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Brain className="h-5 w-5" />
+                    Character Traits
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{currentTraits}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Emotion Indicators */}
+            <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Emotional State</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-red-500"></div>
+                      <span className="text-sm font-medium">Anger</span>
+                    </div>
+                    <span className={`text-sm font-medium ${currentEmotions.anger > 3 ? "text-red-500" : ""}`}>
+                      {currentEmotions.anger.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(currentEmotions.anger / 5) * 100}
+                    className="h-2 bg-red-100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-blue-500"></div>
+                      <span className="text-sm font-medium">Sadness</span>
+                    </div>
+                    <span className={`text-sm font-medium ${currentEmotions.sadness > 3 ? "text-blue-500" : ""}`}>
+                      {currentEmotions.sadness.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(currentEmotions.sadness / 5) * 100}
+                    className="h-2 bg-blue-100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                      <span className="text-sm font-medium">Joy</span>
+                    </div>
+                    <span className={`text-sm font-medium ${currentEmotions.joy > 3 ? "text-green-500" : ""}`}>
+                      {currentEmotions.joy.toFixed(1)}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(currentEmotions.joy / 5) * 100}
+                    className="h-2 bg-green-100"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Parameter Display */}
+            <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Character Parameters</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ParameterDisplay label="Valence" value={currentParameters.valence} max={7} />
+                <ParameterDisplay label="Arousal" value={currentParameters.arousal} max={7} />
+                <ParameterDisplay label="Selection Threshold" value={currentParameters.selection_threshold} max={7} />
+                <ParameterDisplay label="Resolution" value={currentParameters.resolution} max={7} />
+                <ParameterDisplay label="Goal-Directedness" value={currentParameters.goal_directedness} max={7} />
+                <ParameterDisplay label="Securing Rate" value={currentParameters.securing_rate} max={7} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-const SliderControl = ({ label, value, onValueChange, min, max, step }: {
-  label: string;
-  value: number;
-  onValueChange: (value: number) => void;
-  min: number;
-  max: number;
-  step: number;
-}) => (
+const ParameterDisplay = ({ label, value, max }: { label: string; value: number; max: number }) => (
   <div className="space-y-2">
-    <div className="flex justify-between">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <span className="text-sm text-gray-500">{value}</span>
+    <div className="flex justify-between items-center">
+      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm text-muted-foreground">{value.toFixed(1)}</span>
     </div>
-    <Slider.Root
-      className="relative flex items-center h-5"
-      value={[value]}
-      onValueChange={([val]) => onValueChange(val)}
-      min={min}
-      max={max}
-      step={step}
-    >
-      <Slider.Track className="bg-gray-200 relative flex-1 rounded-full h-2">
-        <Slider.Range className="absolute bg-blue-600 rounded-full h-full" />
-      </Slider.Track>
-      <Slider.Thumb className="block w-5 h-5 bg-white rounded-full shadow-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </Slider.Root>
+    <Progress value={(value / max) * 100} className="h-2" />
   </div>
-);
+)
+
