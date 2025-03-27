@@ -109,7 +109,7 @@ export default function ChatPage() {
     setChatHistory(updatedHistory)
 
     try {
-      const response = await axios.post("https://melkamumk.pythonanywhere.com/chat", {
+      const response = await axios.post("https://melkamumk.pythonanywhere.com/chat", { 
         message,
         history: updatedHistory.map((msg) => ({ content: msg.content, is_user: msg.isUser })),
         user_id: userId,
