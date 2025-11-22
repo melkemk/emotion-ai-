@@ -59,7 +59,7 @@ export default function ChatPage() {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
-  }, [chatHistory]) 
+  }, [chatHistory])
 
   // Toggle dark mode
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function ChatPage() {
       formData.append("file", bookFile)
       formData.append("book_title", bookFile.name.split(".", 1)[0])
 
-      const response = await axios.post("https://melkamumk.pythonanywhere.com/extract_characters", formData, {
+      const response = await axios.post("http://localhost:5000/extract_characters", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
       setCharacters(response.data.characters.slice(1))
@@ -109,7 +109,7 @@ export default function ChatPage() {
     setChatHistory(updatedHistory)
 
     try {
-      const response = await axios.post("https://melkamumk.pythonanywhere.com/chat", { 
+      const response = await axios.post("http://localhost:5000/chat", {
         message,
         history: updatedHistory.map((msg) => ({ content: msg.content, is_user: msg.isUser })),
         user_id: userId,
@@ -348,9 +348,8 @@ export default function ChatPage() {
                         {characters.map((char) => (
                           <Card
                             key={char.id}
-                            className={`cursor-pointer transition-all hover:shadow-md ${
-                              selectedCharacter === char.id.toString() ? "border-primary bg-primary/5" : "border-border"
-                            }`}
+                            className={`cursor-pointer transition-all hover:shadow-md ${selectedCharacter === char.id.toString() ? "border-primary bg-primary/5" : "border-border"
+                              }`}
                             onClick={() => setSelectedCharacter(char.id.toString())}
                           >
                             <CardContent className="p-4">
