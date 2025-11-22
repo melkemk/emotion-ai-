@@ -22,15 +22,15 @@ export function ChatBubble({
   return (
     <div className={cn(
       "flex flex-col gap-2 p-4 rounded-2xl max-w-[80%] shadow-md transition-all duration-300",
-      isUser 
-        ? "ml-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground" 
+      isUser
+        ? "ml-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
         : "mr-auto bg-gradient-to-r from-card to-background border border-border"
     )}>
       <p className={cn(
         "text-base leading-relaxed",
         isUser ? "text-primary-foreground" : "text-foreground"
       )}>{message}</p>
-      
+
       {!isUser && (
         <div className="flex gap-3 text-sm mt-1 pt-2 border-t border-border/30">
           <div className="flex items-center gap-1">
@@ -65,3 +65,4 @@ export function ChatBubble({
     </div>
   );
 }
+

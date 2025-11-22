@@ -146,7 +146,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 dark:from-background dark:to-background p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-accent/10 dark:from-background dark:via-background dark:to-muted/10 p-4 md:p-8 animate-gradient">
       <div className="max-w-6xl mx-auto">
         {/* Header with dark mode toggle */}
         <div className="flex justify-between items-center mb-6">
@@ -214,7 +214,7 @@ export default function ChatPage() {
               </TabsList>
 
               <TabsContent value="chat" className="mt-0">
-                <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm">
+                <Card className="border-none shadow-lg bg-card/80 backdrop-blur-sm hover:shadow-2xl transition-shadow duration-300">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex justify-between items-center">
                       <span>Chat with {getSelectedCharacterName()}</span>
@@ -243,14 +243,15 @@ export default function ChatPage() {
                       )}
 
                       {chatHistory.map((msg, index) => (
-                        <ChatBubble
-                          key={index}
-                          message={msg.content}
-                          isUser={msg.isUser}
-                          anger={msg.anger}
-                          sadness={msg.sadness}
-                          joy={msg.joy}
-                        />
+                        <div key={index} className="animate-slide-in">
+                          <ChatBubble
+                            message={msg.content}
+                            isUser={msg.isUser}
+                            anger={msg.anger}
+                            sadness={msg.sadness}
+                            joy={msg.joy}
+                          />
+                        </div>
                       ))}
 
                       {loading && (
@@ -416,7 +417,8 @@ export default function ChatPage() {
                   </div>
                   <Progress
                     value={(currentEmotions.anger / 5) * 100}
-                    className="h-2 bg-red-100"
+                    className={`h-2 bg-red-100 transition-all duration-500 ${currentEmotions.anger > 3 ? 'pulse-glow' : ''
+                      }`}
                   />
                 </div>
 
@@ -432,7 +434,7 @@ export default function ChatPage() {
                   </div>
                   <Progress
                     value={(currentEmotions.sadness / 5) * 100}
-                    className="h-2 bg-blue-100"
+                    className="h-2 bg-blue-100 transition-all duration-500"
                   />
                 </div>
 
@@ -448,7 +450,8 @@ export default function ChatPage() {
                   </div>
                   <Progress
                     value={(currentEmotions.joy / 5) * 100}
-                    className="h-2 bg-green-100"
+                    className={`h-2 bg-green-100 transition-all duration-500 ${currentEmotions.joy > 3 ? 'pulse-glow' : ''
+                      }`}
                   />
                 </div>
               </CardContent>
